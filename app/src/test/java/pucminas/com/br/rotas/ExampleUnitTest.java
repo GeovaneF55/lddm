@@ -1,4 +1,4 @@
-package com.example.tp3.rotas;
+package pucminas.com.br.rotas;
 
 import org.junit.Test;
 

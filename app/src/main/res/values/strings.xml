@@ -1,6 +1,6 @@
 <resources>
     <string name="app_name">Rotas</string>
-    <string name="title_activity_drawer">Home</string>
+    <string name="title_activity_maps">Map</string>
 
     <string name="navigation_drawer_open">Open navigation drawer</string>
     <string name="navigation_drawer_close">Close navigation drawer</string>
@@ -9,4 +9,7 @@
     <string name="location_permission_denied">Permissão negada!</string>
     <string name="permission_required_toast">A permissão é necessária!</string>
     <string name="permission_rationale_location">Acesso ao serviço de localização é necessário</string>
+
+    <string name="routing_started">Cálculo de rotas iniciado!</string>
+    <string name="routing_ended">Rota finalizada!</string>
 </resources>
