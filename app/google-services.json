@@ -1,0 +1,55 @@
+{
+  "project_info": {
+    "project_number": "115603870671",
+    "firebase_url": "https://rotas-2e451.firebaseio.com",
+    "project_id": "rotas-2e451",
+    "storage_bucket": "rotas-2e451.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:115603870671:android:cc077f9d1d9a7889",
+        "android_client_info": {
+          "package_name": "pucminas.com.br.rotas"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "115603870671-tjnrjtq8bi0ajsqt80g30u2km6me9cbu.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "pucminas.com.br.rotas",
+            "certificate_hash": "266a82b4301e243a5c4070d294e3d36d725a3e8e"
+          }
+        },
+        {
+          "client_id": "115603870671-f58bb3hnjuprnse6durbmgjtam6pugdh.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAE8wHYQC_mk-w0Jie4STb86xEOgmX_O5I"
+        }
+      ],
+      "services": {
+        "analytics_service": {
+          "status": 1
+        },
+        "appinvite_service": {
+          "status": 2,
+          "other_platform_oauth_client": [
+            {
+              "client_id": "115603870671-f58bb3hnjuprnse6durbmgjtam6pugdh.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        },
+        "ads_service": {
+          "status": 2
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
