@@ -15,6 +15,22 @@
       },
       "oauth_client": [
         {
+          "client_id": "115603870671-9pfd0595et2njnjfo9sgg4gjdfhdoo0b.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "pucminas.com.br.rotas",
+            "certificate_hash": "7fdb330a5495c20a8a96272f3108c840c7104dd2"
+          }
+        },
+        {
+          "client_id": "115603870671-5de9spr6if2irn43pponl25qcroqd3c3.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "pucminas.com.br.rotas",
+            "certificate_hash": "62668c22e8e9b04f03bd2d2d7d156b9dbd031ff1"
+          }
+        },
+        {
           "client_id": "115603870671-tjnrjtq8bi0ajsqt80g30u2km6me9cbu.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {

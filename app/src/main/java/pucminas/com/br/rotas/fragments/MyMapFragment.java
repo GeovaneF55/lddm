@@ -2,17 +2,13 @@ package pucminas.com.br.rotas.fragments;
 
 
 import android.Manifest;
-import android.content.Context;
-import android.content.pm.PackageManager;
-import android.location.Criteria;
+import android.content.Intent;
 import android.location.Location;
 import android.location.LocationListener;
-import android.location.LocationManager;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
-import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -23,6 +19,8 @@ import pucminas.com.br.rotas.MainActivity;
 import pucminas.com.br.rotas.R;
 import pucminas.com.br.rotas.utils.PermissionUtils;
 
+import com.google.android.gms.location.FusedLocationProviderClient;
+import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
@@ -44,6 +42,7 @@ public class MyMapFragment extends Fragment implements OnMapReadyCallback,
 
     private static final int LOCATION_PERMISSION_REQUEST_CODE = 1;
     private GoogleMap mMap;
+    private FusedLocationProviderClient mFusedLocationClient;
     private boolean mPermissionDenied;
 
     /**
@@ -57,6 +56,8 @@ public class MyMapFragment extends Fragment implements OnMapReadyCallback,
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        mFusedLocationClient = LocationServices.getFusedLocationProviderClient(getActivity());
     }
 
     @Override
@@ -112,15 +113,8 @@ public class MyMapFragment extends Fragment implements OnMapReadyCallback,
         mMap = googleMap;
         mMap.setOnMyLocationButtonClickListener(this);
         mMap.setOnMyLocationClickListener(this);
-        setUpMap();
-    }
 
-    /**
-     * Set up map location.
-     */
-    private void setUpMap() {
-        if (ContextCompat.checkSelfPermission(getContext(), Manifest.permission.ACCESS_FINE_LOCATION)
-                != PackageManager.PERMISSION_GRANTED) {
+        if (! PermissionUtils.checkLocationPermission(getContext())) {
             // Permission to access the location is missing.
             AppCompatActivity activity = (AppCompatActivity) getActivity();
             PermissionUtils.requestPermission(activity, LOCATION_PERMISSION_REQUEST_CODE,
@@ -129,39 +123,33 @@ public class MyMapFragment extends Fragment implements OnMapReadyCallback,
             // Access to the location has been granted to the app.
             mMap.setMyLocationEnabled(true);
 
-            // Get LocationManager object from System Service LOCATION_SERVICE
-            LocationManager locationManager = (LocationManager) getActivity()
-                    .getSystemService(Context.LOCATION_SERVICE);
+            // Get last location
+            getCurrentLocation();
+        }
+    }
 
-            // Create a criteria object to retrieve provider
-            Criteria criteria = new Criteria();
+    /**
+     * Set up map location.
+     */
+    private void moveCamera(Location location) {
+        if (location != null) {
+            // Get latitude of the current location
+            double latitude = location.getLatitude();
 
-            // Get the name of the best provider
-            assert locationManager != null;
-            String provider = locationManager.getBestProvider(criteria, true);
+            // Get longitude of the current location
+            double longitude = location.getLongitude();
 
-            // Get Current Location
-            Location myLocation = locationManager.getLastKnownLocation(provider);
+            // Create a LatLng object for the current location
+            LatLng latLng = new LatLng(latitude, longitude);
 
-            if (myLocation != null) {
-                // Get latitude of the current location
-                double latitude = myLocation.getLatitude();
+            // Show the current location in Google Map
+            mMap.moveCamera(CameraUpdateFactory.newLatLng(latLng));
 
-                // Get longitude of the current location
-                double longitude = myLocation.getLongitude();
+            // Zoom in the Google Map
+            mMap.animateCamera(CameraUpdateFactory.zoomTo(15));
 
-                // Create a LatLng object for the current location
-                LatLng latLng = new LatLng(latitude, longitude);
-
-                // Show the current location in Google Map
-                mMap.moveCamera(CameraUpdateFactory.newLatLng(latLng));
-
-                // Zoom in the Google Map
-                mMap.animateCamera(CameraUpdateFactory.zoomTo(15));
-
-                // Add map marker
-                mMap.addMarker(new MarkerOptions().position(new LatLng(latitude, longitude)));
-            }
+            // Add map marker
+            mMap.addMarker(new MarkerOptions().position(new LatLng(latitude, longitude)));
         }
     }
 
@@ -176,24 +164,17 @@ public class MyMapFragment extends Fragment implements OnMapReadyCallback,
         if (PermissionUtils.isPermissionGranted(permissions, grantResults,
                 Manifest.permission.ACCESS_FINE_LOCATION)) {
             // Enable the my location layer if the permission has been granted.
-            setUpMap();
+            getCurrentLocation();
         } else {
             // Display the missing permission error dialog when the fragments resume.
             mPermissionDenied = true;
         }
     }
 
-    /**
-     * Displays a dialog with error message explaining that the location permission is missing.
-     */
-    private void showMissingPermissionError() {
-        PermissionUtils.PermissionDeniedDialog
-                .newInstance(true).show(getActivity().getSupportFragmentManager(), "dialog");
-    }
-
     @Override
     public void onLocationChanged(Location location) {
-        setUpMap();
+        // Get last location
+        getCurrentLocation();
 
         boolean isStarted = ((MainActivity) getActivity()).getIsStarted();
         if (isStarted) {
@@ -209,4 +190,27 @@ public class MyMapFragment extends Fragment implements OnMapReadyCallback,
 
     @Override
     public void onProviderDisabled(String s) { }
+
+    private void getCurrentLocation() {
+        if (PermissionUtils.checkLocationPermission(getContext())) {
+            // Add listener to get last location
+            mFusedLocationClient.getLastLocation()
+                    .addOnSuccessListener((location) -> {
+                        // Sometimes location could be null
+                        if (location != null) {
+
+                            // If location is defined, move camera to there.
+                            moveCamera(location);
+                        }
+                    });
+        }
+    }
+
+    /**
+     * Displays a dialog with error message explaining that the location permission is missing.
+     */
+    private void showMissingPermissionError() {
+        PermissionUtils.PermissionDeniedDialog
+                .newInstance(true).show(getActivity().getSupportFragmentManager(), "dialog");
+    }
 }
