@@ -1,6 +1,8 @@
 package pucminas.com.br.rotas;
 
+import android.content.Intent;
 import android.content.res.ColorStateList;
+import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentTransaction;
 import android.os.Bundle;
@@ -16,12 +18,26 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.Toast;
 
+import com.firebase.ui.auth.AuthUI;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
+
+import java.util.Arrays;
+
 import pucminas.com.br.rotas.fragments.MyMapFragment;
 
 public class MainActivity extends AppCompatActivity
         implements NavigationView.OnNavigationItemSelectedListener {
 
+    // Sign in request code
+    private static final int RC_SIGN_IN = 1;
+
+    // Firebase components
+    private FirebaseAuth mFirebaseAuth;
+    private FirebaseAuth.AuthStateListener mAuthStateListener;
+
     private boolean mIsStarted;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -59,6 +75,7 @@ public class MainActivity extends AppCompatActivity
             }
         });
 
+        // Initialize navigation drawer
         DrawerLayout drawer = findViewById(R.id.drawer_layout);
         ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(
                 this, drawer, toolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close);
@@ -68,22 +85,57 @@ public class MainActivity extends AppCompatActivity
         NavigationView navigationView = findViewById(R.id.nav_view);
         navigationView.setNavigationItemSelectedListener(this);
 
+        // Initialize firebase components
+        mFirebaseAuth = FirebaseAuth.getInstance();
+        mAuthStateListener = (firebaseAuth -> {
+            FirebaseUser user = firebaseAuth.getCurrentUser();
+
+            if (user != null) {
+                // already signed in
+                switchFragment(MyMapFragment.newInstance(), MyMapFragment.TAG);
+            } else {
+                // not signed in
+                startActivityForResult(
+                    AuthUI.getInstance()
+                        .createSignInIntentBuilder()
+                        .setIsSmartLockEnabled(false)
+                        .setAvailableProviders(
+                            Arrays.asList(new AuthUI.IdpConfig.Builder(AuthUI.EMAIL_PROVIDER).build(),
+                                    new AuthUI.IdpConfig.Builder(AuthUI.GOOGLE_PROVIDER).build()))
+                        .build(),
+                    RC_SIGN_IN);
+            }
+        });
     }
 
-    public boolean getIsStarted() {
-        return mIsStarted;
+    @Override
+    protected void onPause() {
+        super.onPause();
+        mFirebaseAuth.removeAuthStateListener(mAuthStateListener);
     }
 
     @Override
     protected void onResume() {
         super.onResume();
 
-        FragmentManager fragmentManager = getSupportFragmentManager();
-        FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
-        fragmentTransaction.replace(R.id.fragment_container,
-                MyMapFragment.newInstance(), MyMapFragment.TAG);
-        fragmentTransaction.commit();
+        mFirebaseAuth.addAuthStateListener(mAuthStateListener);
 
+    }
+
+    @Override
+    public void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+
+        switch(requestCode) {
+            case RC_SIGN_IN:
+                // Finish activity if user press back button.
+                if (resultCode == RESULT_CANCELED) {
+                    finish();
+                }
+
+                break;
+            default:
+        }
     }
 
     @Override
@@ -143,4 +195,14 @@ public class MainActivity extends AppCompatActivity
         return true;
     }
 
+    public boolean getIsStarted() {
+        return mIsStarted;
+    }
+
+    private void switchFragment(Fragment fragment, String tag) {
+        FragmentManager fragmentManager = getSupportFragmentManager();
+        FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
+        fragmentTransaction.replace(R.id.fragment_container, fragment, tag);
+        fragmentTransaction.commit();
+    }
 }
