@@ -7,6 +7,7 @@ import android.location.Location;
 import android.location.LocationListener;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
+import android.util.Log;
 
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.model.LatLng;
@@ -35,7 +36,7 @@ public class RouteTrackService extends IntentService implements LocationListener
 
         while (RouteTrackService.isTracking) {
             try {
-                Thread.sleep(5000);
+                Thread.sleep(1000);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
@@ -44,6 +45,8 @@ public class RouteTrackService extends IntentService implements LocationListener
 
     @Override
     public void onLocationChanged(Location location) {
+        Log.d("TESTE", "Location Changed");
+
         // Get LatLng of new location
         double latitude = location.getLatitude();
         double longitude = location.getLongitude();
@@ -58,6 +61,7 @@ public class RouteTrackService extends IntentService implements LocationListener
 
         for (LatLng locationRecorded : mLocations) {
             options.add(locationRecorded);
+            Log.d("TESTE", locationRecorded.toString());
         }
 
         map.addPolyline(options);
