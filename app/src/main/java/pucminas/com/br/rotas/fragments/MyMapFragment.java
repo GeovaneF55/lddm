@@ -6,9 +6,6 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.res.ColorStateList;
-import android.graphics.Color;
-import android.location.Location;
-import android.location.LocationListener;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
@@ -24,18 +21,11 @@ import android.widget.Toast;
 import pucminas.com.br.rotas.R;
 import pucminas.com.br.rotas.services.RouteTrackService;
 import pucminas.com.br.rotas.utils.PermissionUtils;
+import pucminas.com.br.rotas.utils.RouteTrackingUtils;
 
-import com.google.android.gms.location.FusedLocationProviderClient;
-import com.google.android.gms.location.LocationServices;
-import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
-import com.google.android.gms.maps.model.LatLng;
-import com.google.android.gms.maps.model.PolylineOptions;
-
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * A simple {@link Fragment} subclass.
@@ -43,19 +33,16 @@ import java.util.List;
  * create an instance of this fragment.
  */
 public class MyMapFragment extends Fragment implements OnMapReadyCallback,
-                    GoogleMap.OnMyLocationButtonClickListener,
-                    GoogleMap.OnMyLocationClickListener,
-                    LocationListener {
+                    GoogleMap.OnMyLocationButtonClickListener {
 
     public static final String TAG = MyMapFragment.class.getName();
 
     private static final int LOCATION_PERMISSION_REQUEST_CODE = 1;
-    private GoogleMap mMap;
-    private FusedLocationProviderClient mFusedLocationClient;
+    private FloatingActionButton mStartEndBtn;
     private boolean mPermissionDenied;
-    private boolean mIsStarted;
+    private boolean mIsTracking;
     private Context mContext;
-    private List<LatLng> mLocations;
+    private RouteTrackingUtils mRouteTrackingUtils;
 
     /**
      * Factory method used to create fragment.
@@ -70,13 +57,9 @@ public class MyMapFragment extends Fragment implements OnMapReadyCallback,
         super.onCreate(savedInstanceState);
 
         mContext = getContext();
-        mFusedLocationClient = LocationServices.getFusedLocationProviderClient(getActivity());
-
         SharedPreferences sharedPreferences = mContext
                 .getSharedPreferences(mContext.getString(R.string.preference_file_key), Context.MODE_PRIVATE);
-        mIsStarted = sharedPreferences.getBoolean("isStarted", false);
-
-        mLocations = new ArrayList<>();
+        mIsTracking = sharedPreferences.getBoolean("isTracking", false);
     }
 
     @Override
@@ -99,27 +82,24 @@ public class MyMapFragment extends Fragment implements OnMapReadyCallback,
     public void onActivityCreated(@Nullable Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
 
-        FloatingActionButton startEndButton = getActivity().findViewById(R.id.start_end_button);
-        startEndButton.setOnClickListener((view) -> {
-            mIsStarted = !mIsStarted;
+        mStartEndBtn = getActivity().findViewById(R.id.start_end_button);
+        changeStartEndBtn();
+
+        mStartEndBtn.setOnClickListener((view) -> {
+            mIsTracking = !mIsTracking;
+            mRouteTrackingUtils.setmIsTracking(mIsTracking);
+
+            changeStartEndBtn();
+
             SharedPreferences sharedPreferences = mContext
                     .getSharedPreferences(mContext.getString(R.string.preference_file_key), Context.MODE_PRIVATE);
             SharedPreferences.Editor editor = sharedPreferences.edit();
-            editor.putBoolean("isStarted", mIsStarted);
+            editor.putBoolean("isTracking", mIsTracking);
             editor.apply();
 
-            /*
-             * TODO: Handle stop service based on minutes stopped at the same location??
-             * TODO: Maybe a separate file for Route Tracking task?
-             */
-            if (mIsStarted) {
+            if (mIsTracking) {
                 Toast.makeText(mContext, getString(R.string.routing_started), Toast.LENGTH_SHORT)
                         .show();
-
-                startEndButton.setImageResource(R.drawable.ic_stop);
-                startEndButton.setBackgroundTintList(ColorStateList.valueOf(
-                        getResources().getColor(R.color.red)
-                ));
 
                 // Call intent service.
                 Intent serviceIntent = new Intent(mContext, RouteTrackService.class);
@@ -128,14 +108,8 @@ public class MyMapFragment extends Fragment implements OnMapReadyCallback,
             } else {
                 Toast.makeText(mContext, getString(R.string.routing_ended), Toast.LENGTH_SHORT)
                         .show();
-
-                startEndButton.setImageResource(R.drawable.ic_navigation);
-                startEndButton.setBackgroundTintList(ColorStateList.valueOf(
-                        getResources().getColor(R.color.colorPrimary)
-                ));
+                RouteTrackService.isTracking = false;
             }
-
-            RouteTrackService.isTracking = false;
         });
     }
 
@@ -151,15 +125,7 @@ public class MyMapFragment extends Fragment implements OnMapReadyCallback,
 
     @Override
     public boolean onMyLocationButtonClick() {
-        Toast.makeText(getContext(), "MyLocation button clicked", Toast.LENGTH_SHORT).show();
-        // Return false so that we don't consume the event and the default behavior still occurs
-        // (the camera animates to the user's current position).
         return false;
-    }
-
-    @Override
-    public void onMyLocationClick(@NonNull Location location) {
-        Toast.makeText(getContext(), "Current location:\n" + location, Toast.LENGTH_LONG).show();
     }
 
     /**
@@ -173,43 +139,26 @@ public class MyMapFragment extends Fragment implements OnMapReadyCallback,
      */
     @Override
     public void onMapReady(GoogleMap googleMap) {
-        mMap = googleMap;
-        mMap.setOnMyLocationButtonClickListener(this);
-        mMap.setOnMyLocationClickListener(this);
+        googleMap.setOnMyLocationButtonClickListener(this);
+        mRouteTrackingUtils = new RouteTrackingUtils(mContext, mIsTracking, googleMap);
+        mRouteTrackingUtils.startLocationUpdates();
 
         if (! PermissionUtils.checkLocationPermission(getContext())) {
             // Permission to access the location is missing.
             AppCompatActivity activity = (AppCompatActivity) getActivity();
             PermissionUtils.requestPermission(activity, LOCATION_PERMISSION_REQUEST_CODE,
                     Manifest.permission.ACCESS_FINE_LOCATION, true);
-        } else if (mMap != null) {
+        } else {
             // Access to the location has been granted to the app.
-            mMap.setMyLocationEnabled(true);
+            googleMap.setMyLocationEnabled(true);
 
-            // Get last location
-            getCurrentLocation();
-        }
-    }
+            // Get current location at the first time map arrived.
+            mRouteTrackingUtils.getmFusedLocationClient().getLastLocation()
+                    .addOnSuccessListener(location ->
+                            mRouteTrackingUtils.setmCurrentLocation(location));
 
-    /**
-     * Set up map location.
-     */
-    private void moveCamera(Location location) {
-        if (location != null) {
-            // Get latitude of the current location
-            double latitude = location.getLatitude();
-
-            // Get longitude of the current location
-            double longitude = location.getLongitude();
-
-            // Create a LatLng object for the current location
-            LatLng latLng = new LatLng(latitude, longitude);
-
-            // Show the current location in Google Map
-            mMap.moveCamera(CameraUpdateFactory.newLatLng(latLng));
-
-            // Zoom in the Google Map
-            mMap.animateCamera(CameraUpdateFactory.zoomTo(15));
+            // Move camera to current location
+            mRouteTrackingUtils.moveCamera(mRouteTrackingUtils.getmCurrentLocation());
         }
     }
 
@@ -224,61 +173,10 @@ public class MyMapFragment extends Fragment implements OnMapReadyCallback,
         if (PermissionUtils.isPermissionGranted(permissions, grantResults,
                 Manifest.permission.ACCESS_FINE_LOCATION)) {
             // Enable the my location layer if the permission has been granted.
-            getCurrentLocation();
+            mRouteTrackingUtils.moveCamera(mRouteTrackingUtils.getmCurrentLocation());
         } else {
             // Display the missing permission error dialog when the fragments resume.
             mPermissionDenied = true;
-        }
-    }
-
-    @Override
-    public void onLocationChanged(Location location) {
-        // Get last location
-        getCurrentLocation();
-        Log.d("TESTE", "Location Changed");
-
-        // Get LatLng of new location
-        double latitude = location.getLatitude();
-        double longitude = location.getLongitude();
-        LatLng latLng = new LatLng(latitude, longitude);
-        mLocations.add(latLng);
-
-        // Create options
-        PolylineOptions options = new PolylineOptions();
-        options.color(Color.parseColor("#FF0000"));
-        options.width(10);
-        options.visible(true);
-
-        for (LatLng locationRecorded : mLocations) {
-            options.add(locationRecorded);
-            Log.d("TESTE", locationRecorded.toString());
-        }
-
-        mMap.addPolyline(options);
-
-    }
-
-    @Override
-    public void onStatusChanged(String s, int i, Bundle bundle) { }
-
-    @Override
-    public void onProviderEnabled(String s) { }
-
-    @Override
-    public void onProviderDisabled(String s) { }
-
-    private void getCurrentLocation() {
-        if (PermissionUtils.checkLocationPermission(getContext())) {
-            // Add listener to get last location
-            mFusedLocationClient.getLastLocation()
-                    .addOnSuccessListener((location) -> {
-                        // Sometimes location could be null
-                        if (location != null) {
-
-                            // If location is defined, move camera to there.
-                            moveCamera(location);
-                        }
-                    });
         }
     }
 
@@ -288,5 +186,20 @@ public class MyMapFragment extends Fragment implements OnMapReadyCallback,
     private void showMissingPermissionError() {
         PermissionUtils.PermissionDeniedDialog
                 .newInstance(true).show(getActivity().getSupportFragmentManager(), "dialog");
+    }
+
+    private void changeStartEndBtn() {
+        if (mIsTracking) {
+            mStartEndBtn.setImageResource(R.drawable.ic_stop);
+            mStartEndBtn.setBackgroundTintList(ColorStateList.valueOf(
+                    getResources().getColor(R.color.red)
+            ));
+
+        } else {
+            mStartEndBtn.setImageResource(R.drawable.ic_navigation);
+            mStartEndBtn.setBackgroundTintList(ColorStateList.valueOf(
+                    getResources().getColor(R.color.colorPrimary)
+            ));
+        }
     }
 }
