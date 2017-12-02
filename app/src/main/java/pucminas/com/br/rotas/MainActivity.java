@@ -1,13 +1,11 @@
 package pucminas.com.br.rotas;
 
 import android.content.Intent;
-import android.content.res.ColorStateList;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentTransaction;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
-import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.NavigationView;
 import android.support.v4.view.GravityCompat;
 import android.support.v4.widget.DrawerLayout;
@@ -16,7 +14,6 @@ import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.widget.Toast;
 
 import com.firebase.ui.auth.AuthUI;
 import com.google.firebase.auth.FirebaseAuth;
@@ -36,44 +33,12 @@ public class MainActivity extends AppCompatActivity
     private FirebaseAuth mFirebaseAuth;
     private FirebaseAuth.AuthStateListener mAuthStateListener;
 
-    private boolean mIsStarted;
-
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_drawer);
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
-
-        mIsStarted = false;
-
-        FloatingActionButton startEndButton = findViewById(R.id.start_end_button);
-        startEndButton.setOnClickListener((view) -> {
-            mIsStarted = !mIsStarted;
-
-            if (mIsStarted) {
-                Toast.makeText(this, getString(R.string.routing_started), Toast.LENGTH_SHORT)
-                        .show();
-
-                startEndButton.setImageResource(R.drawable.ic_stop);
-                startEndButton.setBackgroundTintList(ColorStateList.valueOf(
-                        getResources().getColor(R.color.red)
-                ));
-
-                // startRoutingCalc();
-            } else {
-                Toast.makeText(this, getString(R.string.routing_ended), Toast.LENGTH_SHORT)
-                        .show();
-
-                startEndButton.setImageResource(R.drawable.ic_navigation);
-                startEndButton.setBackgroundTintList(ColorStateList.valueOf(
-                        getResources().getColor(R.color.colorPrimary)
-                ));
-
-                // stopRoutingCalc();
-            }
-        });
 
         // Initialize navigation drawer
         DrawerLayout drawer = findViewById(R.id.drawer_layout);
@@ -193,10 +158,6 @@ public class MainActivity extends AppCompatActivity
         DrawerLayout drawer = findViewById(R.id.drawer_layout);
         drawer.closeDrawer(GravityCompat.START);
         return true;
-    }
-
-    public boolean getIsStarted() {
-        return mIsStarted;
     }
 
     private void switchFragment(Fragment fragment, String tag) {

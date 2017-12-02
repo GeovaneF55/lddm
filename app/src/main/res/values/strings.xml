@@ -12,4 +12,5 @@
 
     <string name="routing_started">Cálculo de rotas iniciado!</string>
     <string name="routing_ended">Rota finalizada!</string>
+    <string name="preference_file_key">pucminas.com.br.rotas.PREFERENCE_FILE_KEY</string>
 </resources>

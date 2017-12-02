@@ -2,12 +2,16 @@ package pucminas.com.br.rotas.fragments;
 
 
 import android.Manifest;
+import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
+import android.content.res.ColorStateList;
 import android.location.Location;
 import android.location.LocationListener;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
+import android.support.design.widget.FloatingActionButton;
 import android.support.v4.app.Fragment;
 import android.support.v7.app.AppCompatActivity;
 import android.view.LayoutInflater;
@@ -15,8 +19,9 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Toast;
 
-import pucminas.com.br.rotas.MainActivity;
 import pucminas.com.br.rotas.R;
+import pucminas.com.br.rotas.services.RouteTrackService;
+import pucminas.com.br.rotas.tasks.DrawMapRouteTask;
 import pucminas.com.br.rotas.utils.PermissionUtils;
 
 import com.google.android.gms.location.FusedLocationProviderClient;
@@ -44,6 +49,8 @@ public class MyMapFragment extends Fragment implements OnMapReadyCallback,
     private GoogleMap mMap;
     private FusedLocationProviderClient mFusedLocationClient;
     private boolean mPermissionDenied;
+    private boolean mIsStarted;
+    private Context mContext;
 
     /**
      * Factory method used to create fragment.
@@ -57,7 +64,12 @@ public class MyMapFragment extends Fragment implements OnMapReadyCallback,
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
+        mContext = getContext();
         mFusedLocationClient = LocationServices.getFusedLocationProviderClient(getActivity());
+
+        SharedPreferences sharedPreferences = mContext
+                .getSharedPreferences(mContext.getString(R.string.preference_file_key), Context.MODE_PRIVATE);
+        mIsStarted = sharedPreferences.getBoolean("isStarted", false);
     }
 
     @Override
@@ -74,6 +86,53 @@ public class MyMapFragment extends Fragment implements OnMapReadyCallback,
         SupportMapFragment mapFragment = (SupportMapFragment) getChildFragmentManager()
                 .findFragmentById(R.id.map);
         mapFragment.getMapAsync(this);
+    }
+
+    @Override
+    public void onActivityCreated(@Nullable Bundle savedInstanceState) {
+        super.onActivityCreated(savedInstanceState);
+
+        FloatingActionButton startEndButton = getActivity().findViewById(R.id.start_end_button);
+        startEndButton.setOnClickListener((view) -> {
+            mIsStarted = !mIsStarted;
+            SharedPreferences sharedPreferences = mContext
+                    .getSharedPreferences(mContext.getString(R.string.preference_file_key), Context.MODE_PRIVATE);
+            SharedPreferences.Editor editor = sharedPreferences.edit();
+            editor.putBoolean("isStarted", mIsStarted);
+            editor.apply();
+
+            /*
+             * TODO: Handle stop service based on minutes stopped at the same location??
+             * TODO: Maybe a separate file for Route Tracking task?
+             */
+            if (mIsStarted) {
+                Toast.makeText(mContext, getString(R.string.routing_started), Toast.LENGTH_SHORT)
+                        .show();
+
+                startEndButton.setImageResource(R.drawable.ic_stop);
+                startEndButton.setBackgroundTintList(ColorStateList.valueOf(
+                        getResources().getColor(R.color.red)
+                ));
+
+                // Set DrawMapRouteTask's map object.
+                DrawMapRouteTask.map = mMap;
+
+                // Call intent service.
+                Intent serviceIntent = new Intent(mContext, RouteTrackService.class);
+                mContext.startService(serviceIntent);
+
+            } else {
+                Toast.makeText(mContext, getString(R.string.routing_ended), Toast.LENGTH_SHORT)
+                        .show();
+
+                startEndButton.setImageResource(R.drawable.ic_navigation);
+                startEndButton.setBackgroundTintList(ColorStateList.valueOf(
+                        getResources().getColor(R.color.colorPrimary)
+                ));
+            }
+
+            RouteTrackService.isTracking = false;
+        });
     }
 
     @Override
@@ -147,9 +206,6 @@ public class MyMapFragment extends Fragment implements OnMapReadyCallback,
 
             // Zoom in the Google Map
             mMap.animateCamera(CameraUpdateFactory.zoomTo(15));
-
-            // Add map marker
-            mMap.addMarker(new MarkerOptions().position(new LatLng(latitude, longitude)));
         }
     }
 
@@ -175,11 +231,6 @@ public class MyMapFragment extends Fragment implements OnMapReadyCallback,
     public void onLocationChanged(Location location) {
         // Get last location
         getCurrentLocation();
-
-        boolean isStarted = ((MainActivity) getActivity()).getIsStarted();
-        if (isStarted) {
-            // TODO: Calculate routes
-        }
     }
 
     @Override
