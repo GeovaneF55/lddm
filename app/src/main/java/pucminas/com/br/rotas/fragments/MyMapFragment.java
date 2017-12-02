@@ -21,7 +21,6 @@ import android.widget.Toast;
 
 import pucminas.com.br.rotas.R;
 import pucminas.com.br.rotas.services.RouteTrackService;
-import pucminas.com.br.rotas.tasks.DrawMapRouteTask;
 import pucminas.com.br.rotas.utils.PermissionUtils;
 
 import com.google.android.gms.location.FusedLocationProviderClient;
@@ -31,7 +30,6 @@ import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.LatLng;
-import com.google.android.gms.maps.model.MarkerOptions;
 
 /**
  * A simple {@link Fragment} subclass.
@@ -115,7 +113,7 @@ public class MyMapFragment extends Fragment implements OnMapReadyCallback,
                 ));
 
                 // Set DrawMapRouteTask's map object.
-                DrawMapRouteTask.map = mMap;
+                RouteTrackService.map = mMap;
 
                 // Call intent service.
                 Intent serviceIntent = new Intent(mContext, RouteTrackService.class);
