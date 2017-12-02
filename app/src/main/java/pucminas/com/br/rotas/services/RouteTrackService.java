@@ -35,6 +35,7 @@ public class RouteTrackService extends IntentService implements LocationListener
         RouteTrackService.isTracking = true;
 
         while (RouteTrackService.isTracking) {
+            Log.d("TESTE", "Map: " + ((map == null) ? "null" : "not null"));
             try {
                 Thread.sleep(1000);
             } catch (InterruptedException e) {
