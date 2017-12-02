@@ -56,6 +56,10 @@ public class RouteTrackService extends IntentService implements LocationListener
         options.width(10);
         options.visible(true);
 
+        for (LatLng locationRecorded : mLocations) {
+            options.add(locationRecorded);
+        }
+
         map.addPolyline(options);
     }
 
