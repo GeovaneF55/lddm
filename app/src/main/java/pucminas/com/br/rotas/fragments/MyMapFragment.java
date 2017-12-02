@@ -6,6 +6,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.res.ColorStateList;
+import android.graphics.Color;
 import android.location.Location;
 import android.location.LocationListener;
 import android.os.Bundle;
@@ -14,6 +15,7 @@ import android.support.annotation.Nullable;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v4.app.Fragment;
 import android.support.v7.app.AppCompatActivity;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -30,6 +32,10 @@ import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.PolylineOptions;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * A simple {@link Fragment} subclass.
@@ -49,6 +55,7 @@ public class MyMapFragment extends Fragment implements OnMapReadyCallback,
     private boolean mPermissionDenied;
     private boolean mIsStarted;
     private Context mContext;
+    private List<LatLng> mLocations;
 
     /**
      * Factory method used to create fragment.
@@ -68,6 +75,8 @@ public class MyMapFragment extends Fragment implements OnMapReadyCallback,
         SharedPreferences sharedPreferences = mContext
                 .getSharedPreferences(mContext.getString(R.string.preference_file_key), Context.MODE_PRIVATE);
         mIsStarted = sharedPreferences.getBoolean("isStarted", false);
+
+        mLocations = new ArrayList<>();
     }
 
     @Override
@@ -111,9 +120,6 @@ public class MyMapFragment extends Fragment implements OnMapReadyCallback,
                 startEndButton.setBackgroundTintList(ColorStateList.valueOf(
                         getResources().getColor(R.color.red)
                 ));
-
-                // Set DrawMapRouteTask's map object.
-                RouteTrackService.map = mMap;
 
                 // Call intent service.
                 Intent serviceIntent = new Intent(mContext, RouteTrackService.class);
@@ -229,6 +235,27 @@ public class MyMapFragment extends Fragment implements OnMapReadyCallback,
     public void onLocationChanged(Location location) {
         // Get last location
         getCurrentLocation();
+        Log.d("TESTE", "Location Changed");
+
+        // Get LatLng of new location
+        double latitude = location.getLatitude();
+        double longitude = location.getLongitude();
+        LatLng latLng = new LatLng(latitude, longitude);
+        mLocations.add(latLng);
+
+        // Create options
+        PolylineOptions options = new PolylineOptions();
+        options.color(Color.parseColor("#FF0000"));
+        options.width(10);
+        options.visible(true);
+
+        for (LatLng locationRecorded : mLocations) {
+            options.add(locationRecorded);
+            Log.d("TESTE", locationRecorded.toString());
+        }
+
+        mMap.addPolyline(options);
+
     }
 
     @Override
