@@ -1,5 +1,6 @@
 package pucminas.com.br.rotas.utils;
 
+import android.app.PendingIntent;
 import android.content.Context;
 import android.os.Looper;
 
@@ -33,5 +34,18 @@ public class RouteTrackingUtils {
             fusedLocationProviderClient.requestLocationUpdates(locationRequest,
                     locationCallback, Looper.myLooper());
         }
+    }
+
+    public static void startLocationUpdates(Context context, LocationRequest locationRequest,
+                                            PendingIntent callbackIntent,
+                                            FusedLocationProviderClient fusedLocationProviderClient) {
+        if (PermissionUtils.checkLocationPermission(context)) {
+            fusedLocationProviderClient.requestLocationUpdates(locationRequest, callbackIntent);
+        }
+    }
+
+    public static void removeLocationUpdates(FusedLocationProviderClient fusedLocationProviderClient,
+                                             PendingIntent pendingIntent) {
+        fusedLocationProviderClient.removeLocationUpdates(pendingIntent);
     }
 }

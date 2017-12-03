@@ -2,6 +2,7 @@ package pucminas.com.br.rotas.fragments;
 
 
 import android.Manifest;
+import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -55,6 +56,7 @@ public class MyMapFragment extends Fragment implements OnMapReadyCallback,
     public static final String KEY_IS_TRACKING = "isTracking";
     public static final String KEY_LOCATIONS = "locations";
     public static final String TAG = MyMapFragment.class.getName();
+    private static final int RC_LOCATIONS_UPDATE_CODE = 1;
 
     private boolean mIsTracking;
     private boolean mPermissionDenied;
@@ -73,7 +75,7 @@ public class MyMapFragment extends Fragment implements OnMapReadyCallback,
     public class RouteTrackBroadcastReceiver extends BroadcastReceiver {
         @Override
         public void onReceive(Context context, Intent intent) {
-            mLocations = intent.getParcelableArrayListExtra(MyMapFragment.KEY_LOCATIONS);
+            mLocations.add(intent.getParcelableExtra(MyMapFragment.KEY_LOCATIONS));
             drawRoute();
         }
     }
@@ -101,11 +103,7 @@ public class MyMapFragment extends Fragment implements OnMapReadyCallback,
         mLocationCallback = new LocationCallback() {
             @Override
             public void onLocationResult(LocationResult locationResult) {
-                mCurrentLocation = locationResult.getLastLocation();
-
-                if (mIsTracking) {
-                    moveCamera(mCurrentLocation);
-                }
+                moveCamera(locationResult.getLastLocation());
             }
         };
     }
@@ -149,14 +147,21 @@ public class MyMapFragment extends Fragment implements OnMapReadyCallback,
                         .show();
 
                 // Call intent service.
-                Intent serviceIntent = new Intent(mContext, RouteTrackService.class);
-                serviceIntent.putParcelableArrayListExtra(KEY_LOCATIONS, mLocations);
-                mContext.startService(serviceIntent);
+                startRouteTracking();
 
             } else {
                 Toast.makeText(mContext, getString(R.string.routing_ended), Toast.LENGTH_SHORT)
                         .show();
-                RouteTrackService.isTracking = false;
+
+                if (PermissionUtils.checkLocationPermission(mContext)) {
+                    mFusedLocationProviderClient.getLastLocation()
+                            .addOnSuccessListener(location -> mCurrentLocation = location);
+                }
+
+                mLocations.add(new LatLng(mCurrentLocation.getLatitude(), mCurrentLocation.getLongitude()));
+                mMap.clear();
+                drawRoute();
+                stopRouteTracking();
             }
         });
     }
@@ -187,6 +192,17 @@ public class MyMapFragment extends Fragment implements OnMapReadyCallback,
     }
 
     @Override
+    public void onDestroy() {
+        super.onDestroy();
+
+        SharedPreferences sharedPreferences = mContext
+                .getSharedPreferences(mContext.getString(R.string.preference_file_key), Context.MODE_PRIVATE);
+        SharedPreferences.Editor editor = sharedPreferences.edit();
+        editor.putBoolean(KEY_IS_TRACKING, false);
+        editor.apply();
+    }
+
+    @Override
     public boolean onMyLocationButtonClick() {
         return false;
     }
@@ -204,6 +220,8 @@ public class MyMapFragment extends Fragment implements OnMapReadyCallback,
     public void onMapReady(GoogleMap googleMap) {
         mMap = googleMap;
         mMap.setOnMyLocationButtonClickListener(this);
+
+        // Location updates for this fragment
         RouteTrackingUtils.startLocationUpdates(mContext, mLocationRequest, mLocationCallback,
                 mFusedLocationProviderClient);
 
@@ -301,4 +319,19 @@ public class MyMapFragment extends Fragment implements OnMapReadyCallback,
             ));
         }
     }
+
+    private PendingIntent getPendingIntent() {
+        Intent serviceIntent = new Intent(mContext, RouteTrackService.class);
+        return PendingIntent.getService(mContext, RC_LOCATIONS_UPDATE_CODE,
+                serviceIntent, PendingIntent.FLAG_UPDATE_CURRENT);
+    }
+    private void startRouteTracking() {
+
+        RouteTrackingUtils.startLocationUpdates(mContext, mLocationRequest, getPendingIntent(),
+                mFusedLocationProviderClient);
+    }
+    private void stopRouteTracking() {
+        RouteTrackingUtils.removeLocationUpdates(mFusedLocationProviderClient, getPendingIntent());
+    }
+
 }
