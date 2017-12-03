@@ -13,4 +13,14 @@
     <string name="routing_started">Cálculo de rotas iniciado!</string>
     <string name="routing_ended">Rota finalizada!</string>
     <string name="preference_file_key">pucminas.com.br.rotas.PREFERENCE_FILE_KEY</string>
+    <string name="menuGeovane">Geovane F. S. Santos</string>
+    <string name="menuLuigi">Luigi D. C. Soares</string>
+    <string name="home">Home</string>
+    <string name="foto">Foto</string>
+    <string name="galeria">Galeria</string>
+    <string name="rotas">Rotas</string>
+    <string name="ferramentas">Ferramentas</string>
+    <string name="comunica_o">Comunicação</string>
+    <string name="compartilhar">Compartilhar</string>
+    <string name="enviar">Enviar</string>
 </resources>

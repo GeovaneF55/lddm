@@ -18,6 +18,7 @@ import android.support.design.widget.FloatingActionButton;
 import android.support.v4.app.Fragment;
 import android.support.v4.content.LocalBroadcastManager;
 import android.support.v7.app.AppCompatActivity;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -287,7 +288,10 @@ public class MyMapFragment extends Fragment implements OnMapReadyCallback,
             mMap.moveCamera(CameraUpdateFactory.newLatLng(latLng));
 
             // Zoom in the Google Map
-            mMap.animateCamera(CameraUpdateFactory.zoomTo(15));
+            float zoom = (float)15.5;
+            if(mMap.getCameraPosition().zoom < zoom) {
+                mMap.animateCamera(CameraUpdateFactory.zoomTo(zoom));
+            }
 
             drawRoute();
         }

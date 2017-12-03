@@ -21,10 +21,13 @@ import com.google.firebase.auth.FirebaseUser;
 
 import java.util.Arrays;
 
+import pucminas.com.br.rotas.route.RouteContent;
 import pucminas.com.br.rotas.fragments.MyMapFragment;
+import pucminas.com.br.rotas.route.RouteItem;
 
 public class MainActivity extends AppCompatActivity
-        implements NavigationView.OnNavigationItemSelectedListener {
+        implements NavigationView.OnNavigationItemSelectedListener,
+        RoutesFragment.OnListFragmentInteractionListener {
 
     // Sign in request code
     private static final int RC_SIGN_IN = 1;
@@ -32,6 +35,8 @@ public class MainActivity extends AppCompatActivity
     // Firebase components
     private FirebaseAuth mFirebaseAuth;
     private FirebaseAuth.AuthStateListener mAuthStateListener;
+
+    private MyMapFragment mapFragment = null;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -50,6 +55,8 @@ public class MainActivity extends AppCompatActivity
         NavigationView navigationView = findViewById(R.id.nav_view);
         navigationView.setNavigationItemSelectedListener(this);
 
+        getSupportActionBar().setTitle(getResources().getString(R.string.home));
+
         // Initialize firebase components
         mFirebaseAuth = FirebaseAuth.getInstance();
         mAuthStateListener = (firebaseAuth -> {
@@ -57,7 +64,8 @@ public class MainActivity extends AppCompatActivity
 
             if (user != null) {
                 // already signed in
-                switchFragment(MyMapFragment.newInstance(), MyMapFragment.TAG);
+                mapFragment = MyMapFragment.newInstance();
+                switchFragment(mapFragment, MyMapFragment.TAG);
             } else {
                 // not signed in
                 startActivityForResult(
@@ -82,9 +90,7 @@ public class MainActivity extends AppCompatActivity
     @Override
     protected void onResume() {
         super.onResume();
-
         mFirebaseAuth.addAuthStateListener(mAuthStateListener);
-
     }
 
     @Override
@@ -97,7 +103,6 @@ public class MainActivity extends AppCompatActivity
                 if (resultCode == RESULT_CANCELED) {
                     finish();
                 }
-
                 break;
             default:
         }
@@ -135,24 +140,38 @@ public class MainActivity extends AppCompatActivity
         return super.onOptionsItemSelected(item);
     }
 
+    @Override
+    public void onListFragmentInteraction(RouteItem item) {
+
+    }
+
     @SuppressWarnings("StatementWithEmptyBody")
     @Override
     public boolean onNavigationItemSelected(@NonNull MenuItem item) {
         // Handle navigation view item clicks here.
         int id = item.getItemId();
 
-        if (id == R.id.nav_camera) {
+        if (id == R.id.home) {
+            getSupportActionBar().setTitle(getResources().getString(R.string.home));
+            switchFragment(mapFragment, MyMapFragment.TAG);
+        }else if (id == R.id.nav_camera) {
+            getSupportActionBar().setTitle(getResources().getString(R.string.foto));
             // Handle the camera action
         } else if (id == R.id.nav_gallery) {
-
-        } else if (id == R.id.nav_slideshow) {
-
+            getSupportActionBar().setTitle(getResources().getString(R.string.galeria));
+            // Handle the gallery
+        } else if (id == R.id.nav_routes) {
+            getSupportActionBar().setTitle(getResources().getString(R.string.rotas));
+            switchFragment(RoutesFragment.newInstance(0), RoutesFragment.TAG);
         } else if (id == R.id.nav_manage) {
-
+            getSupportActionBar().setTitle(getResources().getString(R.string.ferramentas));
+            // Handle the manage
         } else if (id == R.id.nav_share) {
-
+            getSupportActionBar().setTitle(getResources().getString(R.string.compartilhar));
+            // Handle the share
         } else if (id == R.id.nav_send) {
-
+            getSupportActionBar().setTitle(getResources().getString(R.string.enviar));
+            // Handle the send
         }
 
         DrawerLayout drawer = findViewById(R.id.drawer_layout);
