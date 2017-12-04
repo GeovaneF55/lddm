@@ -6,7 +6,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 
-import pucminas.com.br.rotas.RoutesFragment.OnListFragmentInteractionListener;
+import pucminas.com.br.rotas.fragments.RoutesFragment.OnListFragmentInteractionListener;
 import pucminas.com.br.rotas.route.RouteItem;
 
 import java.util.List;

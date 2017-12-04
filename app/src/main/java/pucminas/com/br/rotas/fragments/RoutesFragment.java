@@ -1,4 +1,4 @@
-package pucminas.com.br.rotas;
+package pucminas.com.br.rotas.fragments;
 
 import android.content.Context;
 import android.os.Bundle;
@@ -10,6 +10,8 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
+import pucminas.com.br.rotas.MyRoutesRecyclerViewAdapter;
+import pucminas.com.br.rotas.R;
 import pucminas.com.br.rotas.route.RouteContent;
 import pucminas.com.br.rotas.route.RouteItem;
 

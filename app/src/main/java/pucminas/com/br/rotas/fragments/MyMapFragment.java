@@ -7,7 +7,6 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.content.SharedPreferences;
 import android.content.res.ColorStateList;
 import android.graphics.Color;
 import android.location.Location;
@@ -18,7 +17,6 @@ import android.support.design.widget.FloatingActionButton;
 import android.support.v4.app.Fragment;
 import android.support.v4.content.LocalBroadcastManager;
 import android.support.v7.app.AppCompatActivity;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -28,6 +26,7 @@ import pucminas.com.br.rotas.R;
 import pucminas.com.br.rotas.services.RouteTrackService;
 import pucminas.com.br.rotas.utils.PermissionUtils;
 import pucminas.com.br.rotas.utils.RouteTrackingUtils;
+import pucminas.com.br.rotas.utils.SharedPreferencesUtils;
 
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationCallback;
@@ -94,9 +93,7 @@ public class MyMapFragment extends Fragment implements OnMapReadyCallback,
         super.onCreate(savedInstanceState);
 
         mContext = getContext();
-        SharedPreferences sharedPreferences = mContext
-                .getSharedPreferences(mContext.getString(R.string.preference_file_key), Context.MODE_PRIVATE);
-        mIsTracking = sharedPreferences.getBoolean(KEY_IS_TRACKING, false);
+        mIsTracking = SharedPreferencesUtils.readBoolean(mContext, KEY_IS_TRACKING);
 
         mLocations = new ArrayList<>();
         mFusedLocationProviderClient = RouteTrackingUtils.createFusedLocation(mContext);
@@ -137,11 +134,7 @@ public class MyMapFragment extends Fragment implements OnMapReadyCallback,
 
             changeStartEndBtn();
 
-            SharedPreferences sharedPreferences = mContext
-                    .getSharedPreferences(mContext.getString(R.string.preference_file_key), Context.MODE_PRIVATE);
-            SharedPreferences.Editor editor = sharedPreferences.edit();
-            editor.putBoolean(KEY_IS_TRACKING, mIsTracking);
-            editor.apply();
+            SharedPreferencesUtils.writeBoolean(mContext, KEY_IS_TRACKING, mIsTracking);
 
             if (mIsTracking) {
                 Toast.makeText(mContext, getString(R.string.routing_started), Toast.LENGTH_SHORT)
@@ -190,17 +183,6 @@ public class MyMapFragment extends Fragment implements OnMapReadyCallback,
         // Unregister broadcast receiver
         LocalBroadcastManager localBroadcastManager = LocalBroadcastManager.getInstance(mContext);
         localBroadcastManager.unregisterReceiver(mBroadcastReceiver);
-    }
-
-    @Override
-    public void onDestroy() {
-        super.onDestroy();
-
-        SharedPreferences sharedPreferences = mContext
-                .getSharedPreferences(mContext.getString(R.string.preference_file_key), Context.MODE_PRIVATE);
-        SharedPreferences.Editor editor = sharedPreferences.edit();
-        editor.putBoolean(KEY_IS_TRACKING, false);
-        editor.apply();
     }
 
     @Override

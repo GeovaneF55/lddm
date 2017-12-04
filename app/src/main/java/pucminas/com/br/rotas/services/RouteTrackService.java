@@ -18,6 +18,7 @@ import com.google.android.gms.maps.model.LatLng;
 
 import pucminas.com.br.rotas.R;
 import pucminas.com.br.rotas.fragments.MyMapFragment;
+import pucminas.com.br.rotas.utils.SharedPreferencesUtils;
 
 public class RouteTrackService extends IntentService {
 
@@ -31,9 +32,7 @@ public class RouteTrackService extends IntentService {
 
     @Override
     protected void onHandleIntent(@Nullable Intent intent) {
-        SharedPreferences sharedPreferences = this
-                .getSharedPreferences(getString(R.string.preference_file_key), Context.MODE_PRIVATE);
-        boolean isTracking = sharedPreferences.getBoolean(MyMapFragment.KEY_IS_TRACKING, false);
+        boolean isTracking = SharedPreferencesUtils.readBoolean(getApplicationContext(), MyMapFragment.KEY_IS_TRACKING);
 
         if (! isTracking) {
             return;

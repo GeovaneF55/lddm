@@ -21,7 +21,7 @@ import com.google.firebase.auth.FirebaseUser;
 
 import java.util.Arrays;
 
-import pucminas.com.br.rotas.route.RouteContent;
+import pucminas.com.br.rotas.fragments.RoutesFragment;
 import pucminas.com.br.rotas.fragments.MyMapFragment;
 import pucminas.com.br.rotas.route.RouteItem;
 
@@ -142,7 +142,7 @@ public class MainActivity extends AppCompatActivity
 
     @Override
     public void onListFragmentInteraction(RouteItem item) {
-
+        //Do nothing
     }
 
     @SuppressWarnings("StatementWithEmptyBody")
