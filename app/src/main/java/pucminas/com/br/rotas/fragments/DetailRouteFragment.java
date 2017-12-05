@@ -2,16 +2,19 @@ package pucminas.com.br.rotas.fragments;
 
 
 import android.Manifest;
+import android.content.Intent;
 import android.graphics.Color;
 import android.location.Location;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
+import android.support.design.widget.FloatingActionButton;
 import android.support.v4.app.Fragment;
 import android.support.v7.app.AppCompatActivity;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Toast;
 
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
@@ -40,6 +43,7 @@ public class DetailRouteFragment extends Fragment implements OnMapReadyCallback,
     private GoogleMap mMap;
 
     private ArrayList<LatLng> mLatLngs;
+    private FloatingActionButton mWhatsapp;
 
 
     public DetailRouteFragment() {
@@ -81,6 +85,33 @@ public class DetailRouteFragment extends Fragment implements OnMapReadyCallback,
         SupportMapFragment mapFragment = (SupportMapFragment) getChildFragmentManager()
                 .findFragmentById(R.id.detailRoute);
         mapFragment.getMapAsync(this);
+    }
+
+    @Override
+    public void onActivityCreated(@Nullable Bundle savedInstanceState) {
+        super.onActivityCreated(savedInstanceState);
+
+        mWhatsapp = getActivity().findViewById(R.id.btn_whatsapp);
+
+        mWhatsapp.setOnClickListener((view) -> {
+            if (this.getArguments() != null) {
+                mLatLngs = this.getArguments().getParcelableArrayList("latLngs");
+                StringBuilder mensagem = new StringBuilder();
+                for(Object value: mLatLngs.toArray()){
+                    mensagem.append(value.toString()).append("\n");
+                }
+
+                sendWhatsappRoute(mensagem.toString());
+            }
+        });
+    }
+
+    private void sendWhatsappRoute(String mensagem) {
+        Intent wppIntent = new Intent(Intent.ACTION_SEND);
+        wppIntent.setType("text/plain");
+        wppIntent.putExtra(Intent.EXTRA_TEXT, mensagem);
+        wppIntent.setPackage("com.whatsapp");
+        startActivityForResult(wppIntent, 1);
     }
 
     private void drawRoute() {
