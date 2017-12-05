@@ -1,12 +1,16 @@
 package pucminas.com.br.rotas;
 
+import android.content.BroadcastReceiver;
+import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentTransaction;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.design.widget.NavigationView;
+import android.support.v4.content.LocalBroadcastManager;
 import android.support.v4.view.GravityCompat;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBarDrawerToggle;
@@ -36,7 +40,21 @@ public class MainActivity extends AppCompatActivity
     private FirebaseAuth mFirebaseAuth;
     private FirebaseAuth.AuthStateListener mAuthStateListener;
 
-    private MyMapFragment mapFragment = null;
+    private MyMapFragment mMapFragment = null;
+
+    // BroadcastReceiver for route tracking
+    public static final String DRAW_ACTION = RouteTrackBroadcastReceiver.class.getPackage()
+            .getName() + ".DRAW_REQUESTED";
+
+    private RouteTrackBroadcastReceiver mBroadcastReceiver;
+    public class RouteTrackBroadcastReceiver extends BroadcastReceiver {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            MyMapFragment myMapFragment = (MyMapFragment) getSupportFragmentManager()
+                    .findFragmentByTag(MyMapFragment.TAG);
+            myMapFragment.getLocations().add(intent.getParcelableExtra(MyMapFragment.KEY_LOCATIONS));
+        }
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -64,8 +82,8 @@ public class MainActivity extends AppCompatActivity
 
             if (user != null) {
                 // already signed in
-                mapFragment = MyMapFragment.newInstance();
-                switchFragment(mapFragment, MyMapFragment.TAG);
+                mMapFragment = MyMapFragment.newInstance();
+                switchFragment(mMapFragment, MyMapFragment.TAG);
             } else {
                 // not signed in
                 startActivityForResult(
@@ -91,6 +109,21 @@ public class MainActivity extends AppCompatActivity
     protected void onResume() {
         super.onResume();
         mFirebaseAuth.addAuthStateListener(mAuthStateListener);
+
+        // Register broadcast receiver
+        IntentFilter broadcastFilter = new IntentFilter(DRAW_ACTION);
+        mBroadcastReceiver = new MainActivity.RouteTrackBroadcastReceiver();
+        LocalBroadcastManager localBroadcastManager = LocalBroadcastManager.getInstance(this);
+        localBroadcastManager.registerReceiver(mBroadcastReceiver, broadcastFilter);
+    }
+
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+
+        // Unregister broadcast receiver
+        LocalBroadcastManager localBroadcastManager = LocalBroadcastManager.getInstance(this);
+        localBroadcastManager.unregisterReceiver(mBroadcastReceiver);
     }
 
     @Override
@@ -153,7 +186,7 @@ public class MainActivity extends AppCompatActivity
 
         if (id == R.id.home) {
             getSupportActionBar().setTitle(getResources().getString(R.string.home));
-            switchFragment(mapFragment, MyMapFragment.TAG);
+            switchFragment(mMapFragment, MyMapFragment.TAG);
         }else if (id == R.id.nav_camera) {
             getSupportActionBar().setTitle(getResources().getString(R.string.foto));
             // Handle the camera action
@@ -162,7 +195,7 @@ public class MainActivity extends AppCompatActivity
             // Handle the gallery
         } else if (id == R.id.nav_routes) {
             getSupportActionBar().setTitle(getResources().getString(R.string.rotas));
-            switchFragment(RoutesFragment.newInstance(0), RoutesFragment.TAG);
+            switchFragment(RoutesFragment.newInstance(), RoutesFragment.TAG);
         } else if (id == R.id.nav_manage) {
             getSupportActionBar().setTitle(getResources().getString(R.string.ferramentas));
             // Handle the manage

@@ -1,21 +1,20 @@
 package pucminas.com.br.rotas.route;
 
-/**
- * Created by geovane on 03/12/17.
- */
+import com.google.android.gms.maps.model.LatLng;
+
+import java.util.ArrayList;
+
 public class RouteItem {
     public final String id;
-    public final String content;
-    public final String details;
+    public final ArrayList<LatLng> content;
 
-    public RouteItem(String id, String content, String details) {
+    public RouteItem(String id, ArrayList<LatLng> content) {
         this.id = id;
         this.content = content;
-        this.details = details;
     }
 
     @Override
     public String toString() {
-        return content;
+        return id;
     }
 }

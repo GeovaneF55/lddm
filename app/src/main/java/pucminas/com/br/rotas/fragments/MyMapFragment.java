@@ -3,10 +3,8 @@ package pucminas.com.br.rotas.fragments;
 
 import android.Manifest;
 import android.app.PendingIntent;
-import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
-import android.content.IntentFilter;
 import android.content.res.ColorStateList;
 import android.graphics.Color;
 import android.location.Location;
@@ -15,7 +13,6 @@ import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v4.app.Fragment;
-import android.support.v4.content.LocalBroadcastManager;
 import android.support.v7.app.AppCompatActivity;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -25,7 +22,7 @@ import android.widget.Toast;
 import pucminas.com.br.rotas.R;
 import pucminas.com.br.rotas.services.RouteTrackService;
 import pucminas.com.br.rotas.utils.PermissionUtils;
-import pucminas.com.br.rotas.utils.RouteTrackingUtils;
+import pucminas.com.br.rotas.utils.LocationUtils;
 import pucminas.com.br.rotas.utils.SharedPreferencesUtils;
 
 import com.google.android.gms.location.FusedLocationProviderClient;
@@ -38,7 +35,12 @@ import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.PolylineOptions;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
 
+import java.sql.Timestamp;
 import java.util.ArrayList;
 
 /**
@@ -50,35 +52,27 @@ public class MyMapFragment extends Fragment implements OnMapReadyCallback,
                     GoogleMap.OnMyLocationButtonClickListener {
 
     private static final int LOCATION_PERMISSION_REQUEST_CODE = 1;
-
-    public static final String DRAW_ACTION = RouteTrackBroadcastReceiver.class.getPackage()
-            .getName() + ".DRAW_REQUESTED";
-    public static final String KEY_IS_TRACKING = "isTracking";
-    public static final String KEY_LOCATIONS = "locations";
-    public static final String TAG = MyMapFragment.class.getName();
     private static final int RC_LOCATIONS_UPDATE_CODE = 1;
 
+    public static final String KEY_IS_TRACKING = "isTracking";
+    public static final String KEY_LAST_LOCATION_UPDATE = "lastLocationUpdateTimestamp";
+    public static final String KEY_LOCATIONS = "locations";
+    public static final String TAG = MyMapFragment.class.getName();
+
+    private ArrayList<LatLng> mLocations;
     private boolean mIsTracking;
     private boolean mPermissionDenied;
     private Context mContext;
     private FloatingActionButton mStartEndBtn;
 
-    private ArrayList<LatLng> mLocations;
+    // Location & Map
     private FusedLocationProviderClient mFusedLocationProviderClient;
     private GoogleMap mMap;
     private Location mCurrentLocation;
     private LocationRequest mLocationRequest;
     private LocationCallback mLocationCallback;
-    private RouteTrackBroadcastReceiver mBroadcastReceiver;
 
-    // BroadcastReceiver for route tracking
-    public class RouteTrackBroadcastReceiver extends BroadcastReceiver {
-        @Override
-        public void onReceive(Context context, Intent intent) {
-            mLocations.add(intent.getParcelableExtra(MyMapFragment.KEY_LOCATIONS));
-            drawRoute();
-        }
-    }
+    private DatabaseReference mRouteDatabaseReference;
 
     /**
      * Factory method used to create fragment.
@@ -92,16 +86,33 @@ public class MyMapFragment extends Fragment implements OnMapReadyCallback,
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
+        // Get current user
+        FirebaseAuth mFirebaseAuth = FirebaseAuth.getInstance();
+        FirebaseUser mFirebaseUser = mFirebaseAuth.getCurrentUser();
+
+        // Get firebase reference to route.
+        FirebaseDatabase firebaseDatabase = FirebaseDatabase.getInstance();
+
+        assert mFirebaseUser != null;
+        mRouteDatabaseReference = firebaseDatabase.getReference().child(mFirebaseUser.getUid());
+
         mContext = getContext();
         mIsTracking = SharedPreferencesUtils.readBoolean(mContext, KEY_IS_TRACKING);
 
-        mLocations = new ArrayList<>();
-        mFusedLocationProviderClient = RouteTrackingUtils.createFusedLocation(mContext);
-        mLocationRequest = RouteTrackingUtils.createLocationRequest();
+        mFusedLocationProviderClient = LocationUtils.createFusedLocation(mContext);
+        mLocationRequest = LocationUtils.createLocationRequest();
         mLocationCallback = new LocationCallback() {
             @Override
             public void onLocationResult(LocationResult locationResult) {
                 moveCamera(locationResult.getLastLocation());
+
+                if (mLocations != null) {
+                    drawRoute();
+                }
+
+                // Save timestamp as last update location.
+                Timestamp timestamp = new Timestamp(System.currentTimeMillis());
+                SharedPreferencesUtils.writeLong(mContext, KEY_LAST_LOCATION_UPDATE, timestamp.getTime());
             }
         };
     }
@@ -140,6 +151,10 @@ public class MyMapFragment extends Fragment implements OnMapReadyCallback,
                 Toast.makeText(mContext, getString(R.string.routing_started), Toast.LENGTH_SHORT)
                         .show();
 
+                // Clear map.
+                mLocations = new ArrayList<>();
+                mMap.clear();
+
                 // Call intent service.
                 startRouteTracking();
 
@@ -152,10 +167,12 @@ public class MyMapFragment extends Fragment implements OnMapReadyCallback,
                             .addOnSuccessListener(location -> mCurrentLocation = location);
                 }
 
-                mLocations.add(new LatLng(mCurrentLocation.getLatitude(), mCurrentLocation.getLongitude()));
-                mMap.clear();
-                drawRoute();
+                saveRoute();
                 stopRouteTracking();
+
+                if (mLocations != null) {
+                    mLocations.clear();
+                }
             }
         });
     }
@@ -168,21 +185,6 @@ public class MyMapFragment extends Fragment implements OnMapReadyCallback,
             showMissingPermissionError();
             mPermissionDenied = false;
         }
-
-        // Register broadcast receiver
-        IntentFilter broadcastFilter = new IntentFilter(DRAW_ACTION);
-        mBroadcastReceiver = new RouteTrackBroadcastReceiver();
-        LocalBroadcastManager localBroadcastManager = LocalBroadcastManager.getInstance(mContext);
-        localBroadcastManager.registerReceiver(mBroadcastReceiver, broadcastFilter);
-    }
-
-    @Override
-    public void onPause() {
-        super.onPause();
-
-        // Unregister broadcast receiver
-        LocalBroadcastManager localBroadcastManager = LocalBroadcastManager.getInstance(mContext);
-        localBroadcastManager.unregisterReceiver(mBroadcastReceiver);
     }
 
     @Override
@@ -205,7 +207,7 @@ public class MyMapFragment extends Fragment implements OnMapReadyCallback,
         mMap.setOnMyLocationButtonClickListener(this);
 
         // Location updates for this fragment
-        RouteTrackingUtils.startLocationUpdates(mContext, mLocationRequest, mLocationCallback,
+        LocationUtils.startLocationUpdates(mContext, mLocationRequest, mLocationCallback,
                 mFusedLocationProviderClient);
 
         if (! PermissionUtils.checkLocationPermission(getContext())) {
@@ -244,6 +246,10 @@ public class MyMapFragment extends Fragment implements OnMapReadyCallback,
         }
     }
 
+    public ArrayList<LatLng> getLocations() {
+        return mLocations;
+    }
+
     /**
      * Displays a dialog with error message explaining that the location permission is missing.
      */
@@ -270,12 +276,7 @@ public class MyMapFragment extends Fragment implements OnMapReadyCallback,
             mMap.moveCamera(CameraUpdateFactory.newLatLng(latLng));
 
             // Zoom in the Google Map
-            float zoom = (float)15.5;
-            if(mMap.getCameraPosition().zoom < zoom) {
-                mMap.animateCamera(CameraUpdateFactory.zoomTo(zoom));
-            }
-
-            drawRoute();
+            mMap.animateCamera(CameraUpdateFactory.zoomTo(15));
         }
     }
 
@@ -291,8 +292,8 @@ public class MyMapFragment extends Fragment implements OnMapReadyCallback,
         mMap.addPolyline(options);
     }
 
-    private void changeStartEndBtn() {
-        if (mIsTracking) {
+    public void changeStartEndBtn(boolean isTracking) {
+        if (isTracking) {
             mStartEndBtn.setImageResource(R.drawable.ic_stop);
             mStartEndBtn.setBackgroundTintList(ColorStateList.valueOf(
                     getResources().getColor(R.color.red)
@@ -306,18 +307,27 @@ public class MyMapFragment extends Fragment implements OnMapReadyCallback,
         }
     }
 
+    private void changeStartEndBtn() {
+        this.changeStartEndBtn(mIsTracking);
+    }
+
     private PendingIntent getPendingIntent() {
         Intent serviceIntent = new Intent(mContext, RouteTrackService.class);
         return PendingIntent.getService(mContext, RC_LOCATIONS_UPDATE_CODE,
                 serviceIntent, PendingIntent.FLAG_UPDATE_CURRENT);
     }
-    private void startRouteTracking() {
 
-        RouteTrackingUtils.startLocationUpdates(mContext, mLocationRequest, getPendingIntent(),
+    private void startRouteTracking() {
+        LocationUtils.startLocationUpdates(mContext, mLocationRequest, getPendingIntent(),
                 mFusedLocationProviderClient);
     }
     private void stopRouteTracking() {
-        RouteTrackingUtils.removeLocationUpdates(mFusedLocationProviderClient, getPendingIntent());
+        LocationUtils.removeLocationUpdates(mFusedLocationProviderClient, getPendingIntent());
     }
 
+    public void saveRoute() {
+        Timestamp timestamp = new Timestamp(System.currentTimeMillis());
+        String child = String.valueOf(timestamp.getTime());
+        mRouteDatabaseReference.child("route").child(child).setValue(mLocations);
+    }
 }
