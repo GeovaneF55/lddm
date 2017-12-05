@@ -11,20 +11,25 @@ public class SharedPreferencesUtils {
             "pucminas.com.br.rotas.PREFERENCE_FILE_KEY";
 
 
+    public static void clear(Context context) {
+        // Get SharedPreferences
+        SharedPreferences sharedPreferences = context
+                .getSharedPreferences(SHARED_PREFERENCE_FILE, Context.MODE_PRIVATE);
+
+        // Start editing SharedPreferences file.
+        SharedPreferences.Editor editor = sharedPreferences.edit();
+        editor.clear();
+
+        // Apply changes.
+        editor.apply();
+    }
+
     public static boolean readBoolean(Context context, String key) {
         // Get SharedPreferences
         SharedPreferences sharedPreferences = context
                 .getSharedPreferences(SHARED_PREFERENCE_FILE, Context.MODE_PRIVATE);
 
         return sharedPreferences.getBoolean(key, false);
-    }
-
-    public static long readLong(Context context, String key) {
-        // Get SharedPreferences
-        SharedPreferences sharedPreferences = context
-                .getSharedPreferences(SHARED_PREFERENCE_FILE, Context.MODE_PRIVATE);
-
-        return sharedPreferences.getLong(key, 0);
     }
 
     public static void writeBoolean(Context context, String key, boolean value) {

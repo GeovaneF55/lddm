@@ -93,11 +93,12 @@ public class MyMapFragment extends Fragment implements OnMapReadyCallback,
         // Get firebase reference to route.
         FirebaseDatabase firebaseDatabase = FirebaseDatabase.getInstance();
 
-        assert mFirebaseUser != null;
-        mRouteDatabaseReference = firebaseDatabase.getReference().child(mFirebaseUser.getUid());
-
         mContext = getContext();
         mIsTracking = SharedPreferencesUtils.readBoolean(mContext, KEY_IS_TRACKING);
+        mLocations = new ArrayList<>();
+
+        assert mFirebaseUser != null;
+        mRouteDatabaseReference = firebaseDatabase.getReference().child(mFirebaseUser.getUid());
 
         mFusedLocationProviderClient = LocationUtils.createFusedLocation(mContext);
         mLocationRequest = LocationUtils.createLocationRequest();
@@ -167,6 +168,7 @@ public class MyMapFragment extends Fragment implements OnMapReadyCallback,
                             .addOnSuccessListener(location -> mCurrentLocation = location);
                 }
 
+                RouteTrackService.locations.clear();
                 saveRoute();
                 stopRouteTracking();
 

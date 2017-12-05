@@ -9,34 +9,8 @@
             android:icon="@drawable/ic_menu_home"
             android:title="@string/home" />
         <item
-            android:id="@+id/nav_camera"
-            android:icon="@drawable/ic_menu_camera"
-            android:title="@string/foto" />
-        <item
-            android:id="@+id/nav_gallery"
-            android:icon="@drawable/ic_menu_gallery"
-            android:title="@string/galeria" />
-        <item
             android:id="@+id/nav_routes"
             android:icon="@drawable/ic_menu_mapa"
             android:title="@string/rotas" />
-        <item
-            android:id="@+id/nav_manage"
-            android:icon="@drawable/ic_menu_manage"
-            android:title="@string/ferramentas" />
     </group>
-
-    <item android:title="@string/comunica_o">
-        <menu>
-            <item
-                android:id="@+id/nav_share"
-                android:icon="@drawable/ic_menu_share"
-                android:title="@string/compartilhar" />
-            <item
-                android:id="@+id/nav_send"
-                android:icon="@drawable/ic_menu_send"
-                android:title="@string/enviar" />
-        </menu>
-    </item>
-
 </menu>

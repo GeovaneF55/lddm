@@ -13,6 +13,7 @@ import android.support.design.widget.NavigationView;
 import android.support.v4.content.LocalBroadcastManager;
 import android.support.v4.view.GravityCompat;
 import android.support.v4.widget.DrawerLayout;
+import android.support.v7.app.ActionBar;
 import android.support.v7.app.ActionBarDrawerToggle;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
@@ -28,6 +29,7 @@ import java.util.Arrays;
 import pucminas.com.br.rotas.fragments.RoutesFragment;
 import pucminas.com.br.rotas.fragments.MyMapFragment;
 import pucminas.com.br.rotas.route.RouteItem;
+import pucminas.com.br.rotas.utils.SharedPreferencesUtils;
 
 public class MainActivity extends AppCompatActivity
         implements NavigationView.OnNavigationItemSelectedListener,
@@ -47,12 +49,20 @@ public class MainActivity extends AppCompatActivity
             .getName() + ".DRAW_REQUESTED";
 
     private RouteTrackBroadcastReceiver mBroadcastReceiver;
+    private ActionBar mActionBar;
+
     public class RouteTrackBroadcastReceiver extends BroadcastReceiver {
         @Override
         public void onReceive(Context context, Intent intent) {
             MyMapFragment myMapFragment = (MyMapFragment) getSupportFragmentManager()
                     .findFragmentByTag(MyMapFragment.TAG);
-            myMapFragment.getLocations().add(intent.getParcelableExtra(MyMapFragment.KEY_LOCATIONS));
+
+            android.util.Log.d("TESTE", "teste1");
+            if (myMapFragment!= null && myMapFragment.getLocations() != null) {
+                android.util.Log.d("TESTE", "teste");
+                myMapFragment.getLocations().clear();
+                myMapFragment.getLocations().addAll(intent.getParcelableArrayListExtra(MyMapFragment.KEY_LOCATIONS));
+            }
         }
     }
 
@@ -73,7 +83,10 @@ public class MainActivity extends AppCompatActivity
         NavigationView navigationView = findViewById(R.id.nav_view);
         navigationView.setNavigationItemSelectedListener(this);
 
-        getSupportActionBar().setTitle(getResources().getString(R.string.home));
+
+        mActionBar = getSupportActionBar();
+        assert mActionBar != null;
+        mActionBar.setTitle(getResources().getString(R.string.home));
 
         // Initialize firebase components
         mFirebaseAuth = FirebaseAuth.getInstance();
@@ -89,7 +102,7 @@ public class MainActivity extends AppCompatActivity
                 startActivityForResult(
                     AuthUI.getInstance()
                         .createSignInIntentBuilder()
-                        .setIsSmartLockEnabled(false)
+                        .setIsSmartLockEnabled(true)
                         .setAvailableProviders(
                             Arrays.asList(new AuthUI.IdpConfig.Builder(AuthUI.EMAIL_PROVIDER).build(),
                                     new AuthUI.IdpConfig.Builder(AuthUI.GOOGLE_PROVIDER).build()))
@@ -166,7 +179,9 @@ public class MainActivity extends AppCompatActivity
         int id = item.getItemId();
 
         //noinspection SimplifiableIfStatement
-        if (id == R.id.action_settings) {
+        if (id == R.id.action_logout) {
+            AuthUI.getInstance().signOut(this);
+            SharedPreferencesUtils.clear(this);
             return true;
         }
 
@@ -185,26 +200,13 @@ public class MainActivity extends AppCompatActivity
         int id = item.getItemId();
 
         if (id == R.id.home) {
-            getSupportActionBar().setTitle(getResources().getString(R.string.home));
+            assert mActionBar != null;
+            mActionBar.setTitle(getResources().getString(R.string.home));
             switchFragment(mMapFragment, MyMapFragment.TAG);
-        }else if (id == R.id.nav_camera) {
-            getSupportActionBar().setTitle(getResources().getString(R.string.foto));
-            // Handle the camera action
-        } else if (id == R.id.nav_gallery) {
-            getSupportActionBar().setTitle(getResources().getString(R.string.galeria));
-            // Handle the gallery
         } else if (id == R.id.nav_routes) {
-            getSupportActionBar().setTitle(getResources().getString(R.string.rotas));
+            assert mActionBar != null;
+            mActionBar.setTitle(getResources().getString(R.string.rotas));
             switchFragment(RoutesFragment.newInstance(), RoutesFragment.TAG);
-        } else if (id == R.id.nav_manage) {
-            getSupportActionBar().setTitle(getResources().getString(R.string.ferramentas));
-            // Handle the manage
-        } else if (id == R.id.nav_share) {
-            getSupportActionBar().setTitle(getResources().getString(R.string.compartilhar));
-            // Handle the share
-        } else if (id == R.id.nav_send) {
-            getSupportActionBar().setTitle(getResources().getString(R.string.enviar));
-            // Handle the send
         }
 
         DrawerLayout drawer = findViewById(R.id.drawer_layout);

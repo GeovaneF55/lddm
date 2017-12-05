@@ -13,6 +13,7 @@ import com.google.android.gms.maps.model.LatLng;
 
 import java.sql.Time;
 import java.sql.Timestamp;
+import java.util.ArrayList;
 
 import pucminas.com.br.rotas.MainActivity;
 import pucminas.com.br.rotas.R;
@@ -20,6 +21,8 @@ import pucminas.com.br.rotas.fragments.MyMapFragment;
 import pucminas.com.br.rotas.utils.SharedPreferencesUtils;
 
 public class RouteTrackService extends IntentService {
+    public static ArrayList<LatLng> locations = new ArrayList<>();
+
     /**
      * Creates an IntentService.  Invoked by your subclass's constructor.
      */
@@ -47,7 +50,8 @@ public class RouteTrackService extends IntentService {
     private void sendBroadcast(LatLng latLng) {
         Intent broadcastIntent = new Intent();
         broadcastIntent.setAction(MainActivity.DRAW_ACTION);
-        broadcastIntent.putExtra(MyMapFragment.KEY_LOCATIONS, latLng);
+        locations.add(latLng);
+        broadcastIntent.putParcelableArrayListExtra(MyMapFragment.KEY_LOCATIONS, locations);
         LocalBroadcastManager localBroadcastManager = LocalBroadcastManager.getInstance(this);
         localBroadcastManager.sendBroadcast(broadcastIntent);
     }
